@@ -1,0 +1,78 @@
+---
+title: "Social Network Analysis"
+author: "Michaela Fricova"
+date: "2/10/2023"
+output:
+  html_document: default
+  pdf_document: default
+---
+## #2 Marriage and business networks of the Medicis
+This project is the 2/8 part of my mini-series on social network analysis. The goal of this series is to start with the very basics of network analysis, such as with the concepts of centrality and assortativity, and progress towards more advanced topics, including Erdős-Rényi and Configuration models, as well as Exponential family random graphs. In this second project, I am focusing on the concept of network centrality and analysing marriage and business networks of the Medicis. The **Medici family** was one of the most influential and controversial families in the history of the world. They were able to rise above all the other upper-class families of Florence and dominate the political and cultural scene in the city state. The Medici family was instrumental in the **rise of the Italian Renaissance** and they were deeply involved in shaping European culture and politics for more than 300 years.Yet, the family rose to power from a relative obscurity. Medicis only moved to Florence sometime in the 12th century and established a banking business in Florence in 1397 (Padgett and Ansell, 1993). This raises the question: how were Giovanni and his son Cosimo de'Medici able to turn their banking business into the top financial institution and gain such overwhelming political influence over Florence? Maybe their social networks can give us a hint. 
+
+### Loading libraries
+I start by loading the necessary libraries.
+
+```{r error=FALSE, warning=FALSE, message=FALSE}
+library(RColorBrewer)
+library(corrplot)
+library(biganalytics)
+library(tidyverse)
+library(intergraph)
+require(igraph)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+nodes <- read.csv("~/code/2_networks_medici/docs/Padgett-Florentine-Families_nodes.txt", sep="")
+flo_b <- asIgraph(read.table("~/code/2_networks_medici/docs/business.edges", quote="\"", comment.char=""), vertices=nodes, directed=FALSE)
+flo_m <- asIgraph(read.table("~/code/2_networks_medici/docs/marriage.edges", quote="\"", comment.char=""),  vertices=nodes, directed=FALSE)
+```
+
+```{r}
+deg_m <- degree(flo_m)
+eig_m <- evcent(flo_m)$vector
+clo_m <- closeness(flo_m)
+bet_m <- betweenness(flo_m)
+deg_b <- degree(flo_b)
+eig_b <- evcent(flo_b)$vector
+clo_b <- closeness(flo_b)
+bet_b <- betweenness(flo_b)
+
+centralities_name_df <- data.frame(nodes, deg_m, eig_m, clo_m, bet_m, deg_b, eig_b, clo_b, bet_b)
+centralities_name_df
+```
+
+```{r}
+plot(flo_m, 
+     vertex.frame.color="orange",
+     vertex.label=nodes, 
+     vertex.label.size=0.5,
+     vertex.label.color="black",
+     edge.arrow.size=0.25, 
+     vertex.size=10, 
+     edge.width=0.5)
+
+plot(flo_b, 
+     vertex.frame.color="orange",
+     vertex.label=nodes, 
+     vertex.label.size=0.5,
+     vertex.label.color="black",
+     edge.arrow.size=0.25, 
+     vertex.size=10, 
+     edge.width=0.5)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
