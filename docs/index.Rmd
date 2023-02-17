@@ -7,64 +7,142 @@ output:
   pdf_document: default
 ---
 ## #2 Marriage and business networks of the Medicis
-This project is the 2/8 part of my mini-series on social network analysis. The goal of this series is to start with the very basics of network analysis, such as with the concepts of centrality and assortativity, and progress towards more advanced topics, including Erdős-Rényi and Configuration models, as well as Exponential family random graphs. In this second project, I am focusing on the concept of network centrality and analysing marriage and business networks of the Medicis. The **Medici family** was one of the most influential and controversial families in the history of the world. They were able to rise above all the other upper-class families of Florence and dominate the political and cultural scene in the city state. The Medici family was instrumental in the **rise of the Italian Renaissance** and they were deeply involved in shaping European culture and politics for more than 300 years.Yet, the family rose to power from a relative obscurity. Medicis only moved to Florence sometime in the 12th century and established a banking business in Florence in 1397 (Padgett and Ansell, 1993). This raises the question: how were Giovanni and his son Cosimo de'Medici able to turn their banking business into the top financial institution and gain such overwhelming political influence over Florence? Maybe their social networks can give us a hint. 
+This project is the 2/8 part of my mini-series on social network analysis. The goal of this series is to start with the very basics of network analysis, such as with the concepts of centrality and assortativity, and progress towards more advanced topics, including Erdős-Rényi and Configuration models, as well as Exponential family random graphs. In this second project, I am focusing on the concept of network centrality, while analysing marriage and business networks of the Medicis. The **Medici family** was one of the most influential and controversial families in the history of the world. They were able to rise above all the other upper-class families of Florence and dominate the political and cultural scene in the city state. The Medici family was instrumental in the **rise of the Italian Renaissance** and they were deeply involved in shaping European culture and politics for more than 300 years. Yet, the family rose to power from a relative obscurity. Medicis only moved to Florence sometime in the 12th century and established a banking business in Florence in 1397 (Padgett and Ansell, 1993). This raises the question: how were Giovanni and his son Cosimo de'Medici able to turn their banking business into the top financial institution and **gain such overwhelming political influence over Florence**? Maybe their social networks can give us a hint. 
 
 ### Loading libraries
 I start by loading the necessary libraries.
 
-```{r error=FALSE, warning=FALSE, message=FALSE}
-library(RColorBrewer)
-library(corrplot)
-library(biganalytics)
-library(tidyverse)
-library(intergraph)
-require(igraph)
+```{r error=FALSE, warning=FALSE, message=FALSE, results='hide'}
+#define vector of packages to load
+some_packages <- c('RColorBrewer' ,'corrplot','biganalytics','tidyverse' ,'intergraph'
+                   ,'igraph','reactable','data.table','dplyr' ,'tidyr','gridExtra'
+                   ,'grid','png','downloader' ,'grDevices', 'ggpubr')
+
+#load all packages at once
+lapply(some_packages, library, character.only=TRUE)
+
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
+```{r echo = FALSE, fig.height = 3.5, out.width="50%"}
 nodes <- read.csv("~/code/2_networks_medici/docs/Padgett-Florentine-Families_nodes.txt", sep="")
 flo_b <- asIgraph(read.table("~/code/2_networks_medici/docs/business.edges", quote="\"", comment.char=""), vertices=nodes, directed=FALSE)
 flo_m <- asIgraph(read.table("~/code/2_networks_medici/docs/marriage.edges", quote="\"", comment.char=""),  vertices=nodes, directed=FALSE)
+
+V(flo_m)[V(flo_m)$nodeLabel == "MEDICI"]$color <- "#ABD17DFF"
+V(flo_m)[V(flo_m)$nodeLabel != "MEDICI"]$color <- "#A6D0C8"
+V(flo_b)[V(flo_b)$nodeLabel == "MEDICI"]$color <- "#ABD17DFF"
+V(flo_b)[V(flo_b)$nodeLabel != "MEDICI"]$color <- "#A6D0C8"
+
+par(mfrow=c(1,2))
+plot.igraph(flo_m, 
+            main = 'Florence Marriage Network',
+            layout = layout_with_fr,
+            vertex.frame.color = "#8A8B79FF",
+            vertex.color = V(flo_m)$color,
+            vertex.label = nodes$nodeLabel, 
+            vertex.label.font=7,
+            vertex.label.color = 'black',
+            vertex.label.style = 'bold',
+            vertex.label.cex=0.65)
+plot.igraph(flo_b, 
+            main = 'Florence Business Network',
+            layout = layout_with_fr,
+            vertex.frame.color = "#8A8B79FF",
+            vertex.color = V(flo_b)$color,
+            vertex.label = nodes$nodeLabel, 
+            vertex.label.font=7,
+            vertex.label.color = 'black',
+            vertex.label.style = 'bold',
+            vertex.label.cex=0.65)
+
 ```
 
-```{r}
-deg_m <- degree(flo_m)
-eig_m <- evcent(flo_m)$vector
-clo_m <- closeness(flo_m)
-bet_m <- betweenness(flo_m)
-deg_b <- degree(flo_b)
-eig_b <- evcent(flo_b)$vector
-clo_b <- closeness(flo_b)
-bet_b <- betweenness(flo_b)
+The figures above outline links between the key families in Florence, whereby a link represents a marriage or a business relation between members of two families. Given that marriage and business relations are bi-directional by nature, the network edges are un-directed. 
 
-centralities_name_df <- data.frame(nodes, deg_m, eig_m, clo_m, bet_m, deg_b, eig_b, clo_b, bet_b)
-centralities_name_df
+
+```{r}
+
+centralities_name_df <- data.frame(nodes$nodeLabel, round(degree(flo_m),2), round(evcent(flo_m)$vector, 2), round(closeness(flo_m),5), round(betweenness(flo_m),2), round(degree(flo_b),2), round(evcent(flo_b)$vector,2), round(closeness(flo_b),5), round(betweenness(flo_b),2))
+colnames(centralities_name_df) <- c('family name', 'degree marriage', 'eigenvector marriage', 'closeness marriage', 'betweeness marriage','degree business', 'eigenvector business', 'closeness business', 'betweeness business')
+
+reactable(centralities_name_df,  
+          style = list(fontFamily = 'Menlo', fontSize = '10px'),
+          defaultColDef = 
+            colDef(header = function(value) gsub(".", " ", value, fixed = TRUE),
+                   cell = function(value) format(value, nsmall = 1),
+                   align = "center",
+                   minWidth = 70,
+                   headerStyle = list(background = "#f7f7f8")
+                   ),
+            rowStyle = function(index) {
+    if (centralities_name_df[index, "degree marriage"] > 5) {
+      list(background = "#A6D0C8")
+    }
+  },
+  rowClass = function(index) {
+    if (centralities_name_df[index, "degree marriage"] < 5) {
+      "bold"
+    }
+  }
+)
+
+```
+It is evident from the table above that the Medici family strongly dominated in the marriage network. They had the highest degree, Eigenvector, closeness but also betweeness centrality of the select families. The Medicis had a degree centrality of 6, meaning that they were directly connected to 6 other elite families through direct marriage ties. But not only did the family have a great number of marital ties, but they also intermarried with the most important families in the marriage network (such as the Strozzis, Ridolfis and Tornaboun). This is evident from the highest Eigenvector centrality of the Medicis (equal to one). 
+
+Closeness centrality is a useful measure that estimates how fast the flow of information would be through a given node to other nodes (calculated using shortest geodesic distance). Given that the Medicis have the highest closeness centrality in the marriage network - although tightly followed by the Guadagni and Albizzi - it appears that the family had great access to information (Newman, 2010). Also in the business network did the Medicis come among the top families in the closeness centrality.
+
+Finally the relatively high betweeness of the Medicis suggests that the Medicis not only could readily access to information, but that they also influenced what information gets passed on to less interconnected families in the network. The concept of the betweeness centrality is related to that of a bridge. Nodes that have high betweenness centraility tend to bridge otherwise disconnected nodes. This way they can receive unique information and also substantially influence the network.
+
+```{r}
+centralities_df <- data.frame(round(degree(flo_m),2), round(evcent(flo_m)$vector, 2), round(closeness(flo_m),2), round(betweenness(flo_m),2), round(degree(flo_b),2), round(evcent(flo_b)$vector,2), round(closeness(flo_b),2), round(betweenness(flo_b),2))
+colnames(centralities_df) <- c('degree marriage', 'eigenvector marriage', 'closeness marriage', 'betweeness marriage','degree business', 'eigenvector business', 'closeness business', 'betweeness business')
+plot(centralities_df)
+cors <- cor(centralities_df, method = "pearson")
+print(cors)
+corrplot.mixed(cors, tl.col = "black", tl.cex =0.5, tl.srt=45, tl.pos='lt')
+```
+We find varied Pearson's correlations among the 8 centrality measures presented here. But, in vast majority of cases, the 8 centrality measures are positively correlated. The 2 most closely correlated metrics are (1) Degree centrality and (2) Eigenvector centrality in the marriage network.These 2 metrics have a strong positive correlation of approximately 0.94. This high correlation is congruent with the fact that Degree and Eigenvector centrality are theoretically interlinked concepts. Both Degree and Eigenvector centrality depict the prestige, influence and access to information among network nodes. They both consider the number of direct connections that a node has, although Eigenvector centrality extends on this by also measuring the relative importance of each immediate connection.
+
+```{r}
+graph.density(flo_m)
+graph.density(flo_b)
 ```
 
+The 2 least correlated metrics are (1) Betweenness centrality in the marriage network and (2) Eigenvector centrality in the business network. They have Pearson correlation coefficient of approximately -0.02. I inscribe this low correlation to 2 factors: 
+(A) the disparate nature of the 2 centrality metrics and 
+(B) to the fact that the centrality measures are calculated for 2 different networks - i.e. business vs. marriage.
+For one, the marriage network is more dense, meaning there is a higher general level of cohesion in the network graph. The marriage network has density of 0.1666667, i.e. approximately 16.67% of all potential network connections are realized. In contrast, the business network has density of 0.125, and so only 12.5% of all potential network connections are realized. Furthermore, the marriage network also has only 1 isolate compared to the business network, where there are 5 isolates. Given the disparate nature of the 2 networks, there is little reason to believe that their centrality measures should be perfectly correlated. In addition, betweenness centrality differs from the 3 other centrality measures (including Eigenvector centrality) in that it is not primarily concerned with how well-connected a vertex is. Instead, it measures how much a vertex falls between others. Indeed a vertex can have a low degree and be connected to others that have low degree (definition of Eigenvector centrality) and still have high betweenness. One such scenario is when the vertex lies on a bridge joining 2 groups of other vertices. All paths between the 2 groups must pass through this vertex and so it has a high betweenness, even though its Eigenvector centrality is low. 
+
+
 ```{r}
-plot(flo_m, 
+dlayout <- layout.fruchterman.reingold(flo_m)
+plot(flo_m,
+     vertex.size=betweenness(flo_m)*1.20,
      vertex.frame.color="orange",
-     vertex.label=nodes, 
+     vertex.label=nodes$nodeLabel,
      vertex.label.size=0.5,
      vertex.label.color="black",
-     edge.arrow.size=0.25, 
-     vertex.size=10, 
-     edge.width=0.5)
+     vertex.label.font=2,   
+     vertex.label.cex=0.5,
+     vertex.label.family="Times",
+     edge.color="grey",                        
+     edge.width=1.5,
+     main="Betweenness Centrality in Marriage Network",
+     layout=dlayout)
+
 
 plot(flo_b, 
+     vertex.size=degree(flo_b)*7,
      vertex.frame.color="orange",
-     vertex.label=nodes, 
+     vertex.label=ifelse(degree(flo_b) > 0, nodes$nodeLabel, NA),
      vertex.label.size=0.5,
      vertex.label.color="black",
-     edge.arrow.size=0.25, 
-     vertex.size=10, 
-     edge.width=0.5)
+     vertex.label.font=2,   
+     vertex.label.cex=0.5,
+     vertex.label.family="Times",
+     edge.color="grey",                        
+     edge.width=1.5,
+     main="Degree Centrality in Business Network")
 ```
 
 ## Including Plots
